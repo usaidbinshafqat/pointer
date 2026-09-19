@@ -1,0 +1,26 @@
+Pointer
+Copyright (c) 2026 Pointer contributors
+
+Pointer is distributed under the MIT License. See LICENSE.
+
+This distribution includes open-source software and assets, including:
+
+- AndroidX and Jetpack Compose, Copyright The Android Open Source Project,
+  licensed under the Apache License 2.0.
+- Kotlin and kotlinx libraries, Copyright JetBrains and contributors, licensed
+  under the Apache License 2.0.
+- OkHttp, Copyright Square, Inc. and contributors, licensed under the Apache
+  License 2.0.
+- Multiplatform Markdown Renderer, Copyright Mike Penz and contributors,
+  licensed under the Apache License 2.0.
+- Material Icons, Copyright Google LLC, licensed under the Apache License 2.0.
+- Fira Sans and Fira Code, licensed under the SIL Open Font License 1.1.
+
+Complete Fira font license texts are bundled in:
+
+- app/src/main/assets/licenses/FIRA_SANS_OFL.txt
+- app/src/main/assets/licenses/FIRA_CODE_OFL.txt
+
+The corresponding source projects and exact dependency versions are listed in
+the Gradle build files. This NOTICE is informational and does not replace the
+license terms supplied by each project.

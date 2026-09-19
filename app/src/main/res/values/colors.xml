@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Pre-Compose window + splash colours. Material 3 light surface / on-surface tones;
+         values-night and the v31 qualifiers swap these for dark and wallpaper-derived tones. -->
+    <color name="window_bg">#FFFEF7FF</color>
+    <color name="splash_mark">#FF1D1B20</color>
+    <color name="ic_launcher_background">#FF1F6F64</color>
+</resources>
