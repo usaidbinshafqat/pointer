@@ -514,7 +514,40 @@ class ModelsTest {
         assertTrue(failed.isTransientNetworkFailure())
         assertTrue(failed.isTransientStreamLoss())
         assertTrue("Failed to connect to api.cursor.com".isStaleConnectErrorText())
+        assertTrue("couldn't reach cursor. check the network and try again".isStaleConnectErrorText())
         assertFalse("HTTP 409".isStaleConnectErrorText())
+    }
+
+    @Test
+    fun `friendly network errors hide once the chat already has messages`() {
+        val lines = listOf(
+            ChatLine("u1", ChatLine.Kind.USER, "first"),
+            ChatLine("e1", ChatLine.Kind.ERROR, "couldn't reach cursor. check the network and try again"),
+        )
+        assertEquals(listOf("u1"), lines.withoutResolvedErrors().map { it.id })
+        assertEquals(null, resolvedAgentError(lines.last().text, lines))
+    }
+
+    @Test
+    fun `errors hide when the same turn later gets an assistant reply`() {
+        val lines = listOf(
+            ChatLine("u1", ChatLine.Kind.USER, "first"),
+            ChatLine("a1", ChatLine.Kind.ASSISTANT, "done"),
+            ChatLine("e1", ChatLine.Kind.ERROR, "HTTP 409"),
+        )
+        assertEquals(listOf("u1", "a1"), lines.withoutResolvedErrors().map { it.id })
+        assertEquals(null, resolvedAgentError("HTTP 409", lines))
+        assertEquals(null, resolvedAgentError("HTTP 409", lines, streaming = true))
+    }
+
+    @Test
+    fun `error banner hides while a later turn is streaming`() {
+        val lines = listOf(
+            ChatLine("u1", ChatLine.Kind.USER, "first"),
+            ChatLine("e1", ChatLine.Kind.ERROR, "HTTP 409"),
+        )
+        assertEquals(null, resolvedAgentError("HTTP 409", lines, streaming = true))
+        assertEquals("HTTP 409", resolvedAgentError("HTTP 409", lines, streaming = false))
     }
 
     private fun agent(

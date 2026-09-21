@@ -1198,35 +1198,44 @@ data class ChatLine(
     )
 }
 
-/** Drops error rows that a later user message or assistant reply has already superseded. */
-fun List<ChatLine>.withoutResolvedErrors(): List<ChatLine> {
-    val lastResolved = indexOfLast { line ->
-        line.kind == ChatLine.Kind.USER ||
-            (line.kind == ChatLine.Kind.ASSISTANT && line.text.isNotBlank())
+private fun ChatLine.isResolvedContent(): Boolean =
+    kind == ChatLine.Kind.USER ||
+        (kind == ChatLine.Kind.ASSISTANT && text.isNotBlank())
+
+/**
+ * Drops error rows that later conversation activity has already superseded.
+ *
+ * Assistant placeholders are inserted before a send/stream failure, then filled in
+ * if the turn recovers — so an error can sit after the successful reply in the list.
+ */
+fun List<ChatLine>.withoutResolvedErrors(): List<ChatLine> =
+    filterIndexed { index, line ->
+        line.kind != ChatLine.Kind.ERROR || !errorIsResolved(index)
     }
-    val hasConversation = lastResolved >= 0
-    return filterIndexed { index, line ->
-        if (line.kind != ChatLine.Kind.ERROR) return@filterIndexed true
-        if (hasConversation && line.text.isStaleConnectErrorText()) return@filterIndexed false
-        lastResolved < 0 || index > lastResolved
+
+private fun List<ChatLine>.errorIsResolved(errorIndex: Int): Boolean {
+    val line = getOrNull(errorIndex) ?: return false
+    if (drop(errorIndex + 1).any { it.isResolvedContent() }) return true
+    val lastUserBefore = (errorIndex - 1 downTo 0).firstOrNull { this[it].kind == ChatLine.Kind.USER }
+    if (lastUserBefore != null) {
+        val turnHasAssistantReply = subList(lastUserBefore + 1, size).any {
+            it.kind == ChatLine.Kind.ASSISTANT && it.text.isNotBlank()
+        }
+        if (turnHasAssistantReply) return true
     }
+    return line.text.isTransientNetworkErrorText() && any { it.isResolvedContent() }
 }
 
-fun resolvedAgentError(error: String?, lines: List<ChatLine>): String? {
-    if (error.isNullOrBlank()) return null
-    if (error.isStaleConnectErrorText() &&
-        lines.any {
-            it.kind == ChatLine.Kind.USER ||
-                (it.kind == ChatLine.Kind.ASSISTANT && it.text.isNotBlank())
-        }
-    ) {
-        return null
-    }
-    val lastResolved = lines.indexOfLast { line ->
-        line.kind == ChatLine.Kind.USER ||
-            (line.kind == ChatLine.Kind.ASSISTANT && line.text.isNotBlank())
-    }
+fun resolvedAgentError(
+    error: String?,
+    lines: List<ChatLine>,
+    streaming: Boolean = false,
+): String? {
+    if (error.isNullOrBlank() || streaming) return null
+    if (error.isTransientNetworkErrorText() && lines.any { it.isResolvedContent() }) return null
     val lastError = lines.indexOfLast { it.kind == ChatLine.Kind.ERROR }
+    if (lastError >= 0 && lines.errorIsResolved(lastError)) return null
+    val lastResolved = lines.indexOfLast { it.isResolvedContent() }
     if (lastResolved >= 0 && lastResolved > lastError) return null
     return error
 }
@@ -1285,13 +1294,8 @@ fun CharSequence.isTransientNetworkErrorText(): Boolean {
         text.contains("network is unreachable")
 }
 
-/** Raw OkHttp connect failures leftover from an earlier retry that later succeeded. */
-fun CharSequence.isStaleConnectErrorText(): Boolean {
-    val text = toString().lowercase()
-    return text.contains("failed to connect") ||
-        text.contains("unable to resolve host") ||
-        text.contains("unknown host")
-}
+/** Leftover connect / reachability copy from an earlier retry that later succeeded. */
+fun CharSequence.isStaleConnectErrorText(): Boolean = isTransientNetworkErrorText()
 
 fun Exception.isTransientStreamLoss(): Boolean {
     if (isTransientNetworkFailure()) return true
@@ -1655,7 +1659,7 @@ fun mergeConversation(
         local = merged,
         history = historyWithAttachments,
         preferHistoryWhenDistinct = !streaming,
-    )
+    ).withoutResolvedErrors()
 }
 
 fun String?.isFailedRun(): Boolean {

@@ -14,7 +14,7 @@ android {
         applicationId = "app.pointer.android"
         minSdk = 26
         targetSdk = 36
-        versionCode = 25
+        versionCode = 26
         versionName = "0.0.1"
     }
 

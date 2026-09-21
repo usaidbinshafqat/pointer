@@ -2096,7 +2096,7 @@ class CursorAppViewModel(app: Application) : AndroidViewModel(app) {
         if (agentId.isBlank() || lines.isEmpty()) return
         viewModelScope.launch {
             runCatching {
-                val syncedAt = cacheRepo.saveConversation(agentId, lines)
+                val syncedAt = cacheRepo.saveConversation(agentId, lines.withoutResolvedErrors())
                 mutateAgent(agentId) { it.copy(conversationSyncedAt = syncedAt) }
             }
         }
@@ -2366,7 +2366,7 @@ class CursorAppViewModel(app: Application) : AndroidViewModel(app) {
                     text = text,
                 )
             }
-            state.copy(lines = lines)
+            state.copy(lines = lines.withoutResolvedErrors(), error = null)
         }
     }
 

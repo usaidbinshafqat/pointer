@@ -1,6 +1,8 @@
 package app.cursor.android.ui
 
 import android.Manifest
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -10,6 +12,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,6 +38,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.DriveFileRenameOutline
 import androidx.compose.material.icons.outlined.EmojiEmotions
 import androidx.compose.material.icons.outlined.MoreVert
@@ -416,7 +420,7 @@ fun AgentScreen(
             }
             else -> {
                 val visibleLines = state.lines.withoutResolvedErrors()
-                val visibleError = resolvedAgentError(state.error, state.lines)
+                val visibleError = resolvedAgentError(state.error, state.lines, state.streaming)
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
@@ -467,7 +471,10 @@ fun AgentScreen(
                             line.attachments.isNotEmpty()
                         ) {
                             when (line.kind) {
-                                ChatLine.Kind.ASSISTANT -> AssistantTurn(line, streamingAssistant)
+                                ChatLine.Kind.ASSISTANT -> AssistantTurn(
+                                    line = line,
+                                    isStreaming = streamingAssistant,
+                                )
                                 else -> SimpleBubble(
                                     line = line,
                                     onRemoveQueued = if (line.queued) {
@@ -586,11 +593,13 @@ private fun AssistantTurn(line: ChatLine, isStreaming: Boolean) {
         )
 
         if (line.text.isNotBlank() || isStreaming) {
-            AssistantMarkdown(
-                content = line.text.ifBlank { "…" },
-                isStreaming = isStreaming,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            CopyMessageMenu(text = line.text) { modifier ->
+                AssistantMarkdown(
+                    content = line.text.ifBlank { "…" },
+                    isStreaming = isStreaming,
+                    modifier = modifier.fillMaxWidth(),
+                )
+            }
         }
 
         TurnFilesCard(
@@ -672,18 +681,66 @@ private fun SimpleBubble(
         val caption = line.text.trim()
         val hideCaption = caption.isEmpty() || caption.isSyntheticAttachmentCaption()
         if (!hideCaption || line.attachments.isEmpty()) {
-            Surface(
-                modifier = Modifier.widthIn(max = 560.dp),
-                shape = MaterialTheme.shapes.large,
-                color = bg,
-                contentColor = fg,
-            ) {
-                Text(
-                    text = caption.ifBlank { "…" },
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                )
+            val copyText = caption.takeIf {
+                line.kind == ChatLine.Kind.USER || line.kind == ChatLine.Kind.ASSISTANT
+            }.orEmpty()
+            CopyMessageMenu(text = copyText) { modifier ->
+                Surface(
+                    modifier = modifier.widthIn(max = 560.dp),
+                    shape = MaterialTheme.shapes.large,
+                    color = bg,
+                    contentColor = fg,
+                ) {
+                    Text(
+                        text = caption.ifBlank { "…" },
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    )
+                }
             }
+        }
+    }
+}
+
+@Composable
+private fun CopyMessageMenu(
+    text: String,
+    content: @Composable (Modifier) -> Unit,
+) {
+    val copyable = text.isNotBlank()
+    if (!copyable) {
+        content(Modifier)
+        return
+    }
+    var menuOpen by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val haptic = rememberPointerHaptics()
+    Box {
+        content(
+            Modifier.combinedClickable(
+                onClick = {},
+                onLongClick = {
+                    haptic(PointerHaptic.Open)
+                    menuOpen = true
+                },
+            ),
+        )
+        DropdownMenu(
+            expanded = menuOpen,
+            onDismissRequest = { menuOpen = false },
+        ) {
+            DropdownMenuItem(
+                text = { Text("copy") },
+                leadingIcon = {
+                    Icon(Icons.Outlined.ContentCopy, contentDescription = null)
+                },
+                onClick = {
+                    val clipboard = context.getSystemService(ClipboardManager::class.java)
+                    clipboard.setPrimaryClip(ClipData.newPlainText("message", text))
+                    haptic(PointerHaptic.Click)
+                    menuOpen = false
+                },
+            )
         }
     }
 }
