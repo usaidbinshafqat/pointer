@@ -743,6 +743,19 @@ class CursorAppViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { localStore.markChatUnread(agentId) }
     }
 
+    fun markChatsRead(agentIds: Set<String>) {
+        val validIds = agentIds.filterTo(linkedSetOf()) { it.isNotBlank() }
+        if (validIds.isEmpty()) return
+        val at = java.time.Instant.now().toString()
+        _inbox.update { state ->
+            state.copy(
+                lastReadAtByAgent = state.lastReadAtByAgent +
+                    validIds.associateWith { at },
+            )
+        }
+        viewModelScope.launch { localStore.markChatsRead(validIds, at) }
+    }
+
     fun setPinned(agentId: String, pinned: Boolean) {
         if (agentId.isBlank()) return
         _inbox.update { state ->

@@ -262,6 +262,20 @@ fun InboxScreen(
                                 Icon(Icons.Outlined.SelectAll, contentDescription = "select all visible chats")
                             }
                             IconButton(
+                                onClick = {
+                                    haptic(PointerHaptic.Click)
+                                    viewModel.markChatsRead(selectedAgentIds)
+                                    selectionMode = false
+                                    selectedAgentIds = emptySet()
+                                },
+                                enabled = selectedAgentIds.isNotEmpty(),
+                            ) {
+                                Icon(
+                                    Icons.Outlined.MarkEmailRead,
+                                    contentDescription = "mark selected chats as read",
+                                )
+                            }
+                            IconButton(
                                 onClick = { removalTargets = selectedAgentIds },
                                 enabled = selectedAgentIds.isNotEmpty(),
                             ) {

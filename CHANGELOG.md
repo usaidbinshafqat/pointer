@@ -6,6 +6,10 @@ uses [Semantic Versioning](https://semver.org/) and the structure from
 
 ## [Unreleased]
 
+### Added
+
+- Bulk “mark as read” action for selected inbox chats.
+
 ## [0.0.1] - 2026-09-20
 
 First public release.

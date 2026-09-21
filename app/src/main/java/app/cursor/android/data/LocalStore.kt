@@ -152,9 +152,12 @@ class LocalStore(private val context: Context) {
 
     suspend fun markChatRead(agentId: String, at: String) {
         if (agentId.isBlank() || at.isBlank()) return
-        update { state ->
-            state.copy(lastReadAtByAgent = state.lastReadAtByAgent + (agentId to at))
-        }
+        update { state -> state.withChatsRead(setOf(agentId), at) }
+    }
+
+    suspend fun markChatsRead(agentIds: Set<String>, at: String) {
+        if (agentIds.isEmpty() || at.isBlank()) return
+        update { state -> state.withChatsRead(agentIds, at) }
     }
 
     suspend fun markChatUnread(agentId: String) {
@@ -212,6 +215,14 @@ internal fun LocalAppState.withoutTrackedAgentRuns(agentIds: Set<String>): Local
     return copy(
         activeRuns = activeRuns.filterNot { it.agentId in agentIds },
         queuedPrompts = queuedPrompts - agentIds,
+    )
+}
+
+internal fun LocalAppState.withChatsRead(agentIds: Set<String>, at: String): LocalAppState {
+    val validIds = agentIds.filterTo(linkedSetOf()) { it.isNotBlank() }
+    if (validIds.isEmpty() || at.isBlank()) return this
+    return copy(
+        lastReadAtByAgent = lastReadAtByAgent + validIds.associateWith { at },
     )
 }
 

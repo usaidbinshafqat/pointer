@@ -5,6 +5,7 @@ import app.cursor.android.data.AgentSummary
 import app.cursor.android.data.ComposerDraft
 import app.cursor.android.data.LocalAppState
 import app.cursor.android.data.QueuedPrompt
+import app.cursor.android.data.withChatsRead
 import app.cursor.android.data.withoutDeletedAgents
 import app.cursor.android.data.withoutTrackedAgentRuns
 import org.junit.Assert.assertEquals
@@ -84,6 +85,20 @@ class AgentLifecycleTest {
     }
 
     @Test
+    fun `bulk read applies one timestamp and preserves other read state`() {
+        val state = LocalAppState(
+            lastReadAtByAgent = mapOf("existing" to "earlier"),
+        )
+
+        val result = state.withChatsRead(setOf("one", "two", ""), "now")
+
+        assertEquals(
+            mapOf("existing" to "earlier", "one" to "now", "two" to "now"),
+            result.lastReadAtByAgent,
+        )
+    }
+
+    @Test
     fun `empty lifecycle selection is a no op`() {
         val inbox = InboxUiState(agents = listOf(agent("one")))
         val local = LocalAppState(chatTitles = mapOf("one" to "title"))
@@ -91,6 +106,7 @@ class AgentLifecycleTest {
         assertSame(inbox, inbox.withoutAgents(emptySet()))
         assertSame(local, local.withoutDeletedAgents(emptySet()))
         assertSame(local, local.withoutTrackedAgentRuns(emptySet()))
+        assertSame(local, local.withChatsRead(emptySet(), "now"))
     }
 
     private fun agent(id: String) = AgentSummary(id = id)
