@@ -6,10 +6,6 @@ uses [Semantic Versioning](https://semver.org/) and the structure from
 
 ## [Unreleased]
 
-### Added
-
-- Bulk “mark as read” action for selected inbox chats.
-
 ## [0.0.1] - 2026-09-20
 
 First public release.
@@ -23,7 +19,8 @@ First public release.
 - Image and file attachments, markdown responses, todos, and per-file change
   summaries.
 - Search, filters, pins, folders, local chat names and icons, plus multi-select
-  archive and permanent-delete actions with explicit confirmation.
+  mark-as-read, archive, and permanent-delete actions with explicit
+  confirmation.
 - Material You, light/dark themes, accessibility text sizing, haptics, and Fira
   Sans appearance choices.
 - Public privacy, security, API-use, contribution, architecture, and release
