@@ -2,7 +2,7 @@
 
 Unofficial Android client for [Cursor Cloud Agents](https://cursor.com/docs/cloud-agent). Pointer is an independent project: paste your own API key and steer agents from your phone.
 
-I maintain this in the gaps around a full-time job. Almost all of it was vibe-coded by Cursor agents, so expect bugs, rough edges, and the occasional silly AI agent decision. Issues and PRs are welcome if you catch something.
+I maintain this in the gaps around a full-time job. Almost all of it was vibe-coded by Cursor agents, so expect bugs, rough edges, and the occasional silly AI agent decisions. Issues and PRs are welcome if you catch something.
 
 **Pointer is not affiliated with, endorsed by, sponsored by, or associated
 with Anysphere, Inc.** Cursor and related marks are trademarks of Anysphere.
