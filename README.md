@@ -2,6 +2,8 @@
 
 Unofficial Android client for [Cursor Cloud Agents](https://cursor.com/docs/cloud-agent). Pointer is an independent project: paste your own API key and steer agents from your phone.
 
+I maintain this in the gaps around a full-time job. Almost all of it was vibe-coded by Cursor agents, so expect bugs, rough edges, and the occasional silly AI agent decision. Issues and PRs are welcome if you catch something.
+
 **Pointer is not affiliated with, endorsed by, sponsored by, or associated
 with Anysphere, Inc.** Cursor and related marks are trademarks of Anysphere.
 This app talks directly to the [Cloud Agents API](https://cursor.com/docs/api)
@@ -29,6 +31,37 @@ adb install -r pointer-0.0.1.apk
 
 Official release APKs use `app.pointer.android`. Debug builds use
 `app.pointer.android.debug`, install separately, and do not share app data.
+
+## Run it
+
+**From a GitHub Release (easiest).** Download `pointer-0.0.1.apk` from
+[Releases](https://github.com/usaidbinshafqat/pointer/releases/latest), verify
+the checksum above, and install it on an Android 8+ phone. Open the app, go to
+**settings**, paste a Cursor API key, tap **save and test**. Cloud agents work
+with only that key. Optional: connect a machine with `agent worker` (see
+Machines below) if you want runs on a computer you own.
+
+**From source with Android Studio.** Clone this repo, open the project in
+Android Studio (JDK 17, Android SDK with compile SDK 37), wait for Gradle
+sync, pick an emulator or a USB-debugged phone, and Run the `app` configuration.
+That installs the **debug** build (`app.pointer.android.debug`), which does
+not share data with the release app.
+
+**From source on the command line:**
+
+```bash
+git clone https://github.com/usaidbinshafqat/pointer.git
+cd pointer
+./gradlew :app:assembleDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+You need JDK 17 and an Android SDK (`ANDROID_HOME` or `sdk.dir` in
+`local.properties`). First launch is the same: **settings** → paste key →
+**save and test**.
+
+Do not commit `local.properties`, a keystore, or an API key. Signed release
+builds are for maintainers; see [RELEASING.md](RELEASING.md).
 
 ## What it does
 
@@ -66,19 +99,6 @@ agent worker start --name "my-laptop" --worker-dir /path/to/your/repo
 ```
 
 In the app, set environment to **my machines** and pick that worker (or a Remote Control desktop Cursor already lists).
-
-## Build
-
-Install JDK 17 and an Android SDK through Android Studio or your platform's
-package manager, then run:
-
-```bash
-./gradlew :app:assembleDebug
-```
-
-APK: `app/build/outputs/apk/debug/app-debug.apk`
-
-Install with USB debugging (`adb install -r …`) or copy the APK to the phone.
 
 ## Contributing
 
