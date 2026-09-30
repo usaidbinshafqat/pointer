@@ -15,6 +15,9 @@ uses [Semantic Versioning](https://semver.org/) and the structure from
 - Hide leftover chat errors after the same turn recovers or a later message
   succeeds, including friendly network failures.
 
+- Draw the follow-up composer over the chat with a transparent surround so
+  only the rounded input stays filled.
+
 ## [0.0.1] - 2026-09-20
 
 First public release.

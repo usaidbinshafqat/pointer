@@ -21,6 +21,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -32,6 +34,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.LazyListState
@@ -67,6 +71,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -74,6 +79,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -108,6 +114,7 @@ fun AgentScreen(
     val modelsState by viewModel.models.collectAsStateWithLifecycle()
     val inbox by viewModel.inbox.collectAsStateWithLifecycle()
     val listState = remember(agentId) { LazyListState() }
+    var composerBarHeightPx by remember(agentId) { mutableIntStateOf(0) }
     var composerExpanded by remember(agentId) { mutableStateOf(false) }
     var composerHeldOpen by remember(agentId) { mutableStateOf(false) }
     val composerCompact by remember {
@@ -204,6 +211,10 @@ fun AgentScreen(
         ?: if (state.agent?.env?.type.equals("machine", ignoreCase = true)) REMOTE_CONTROL_LABEL else null
     val syncing = state.refreshing || state.loading
     val updatedLabel = formatTimeAgo(state.conversationSyncedAt)
+    val layoutDirection = LocalLayoutDirection.current
+    val composerBarHeight = with(LocalDensity.current) {
+        if (composerBarHeightPx > 0) composerBarHeightPx.toDp() else 96.dp
+    }
 
     Scaffold(
         modifier = Modifier
@@ -320,88 +331,22 @@ fun AgentScreen(
             }
             }
         },
-        snackbarHost = { SnackbarHost(snackbar) },
-        containerColor = MaterialTheme.colorScheme.background,
-        bottomBar = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .windowInsetsPadding(
-                        WindowInsets.safeDrawing.only(
-                            WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal,
-                        ),
-                    ),
-            ) {
-                AnimatedVisibility(
-                    visible = state.queue.isNotEmpty(),
-                    enter = fadeIn() + expandVertically(expandFrom = Alignment.Bottom),
-                    exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Bottom),
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 12.dp, end = 16.dp, bottom = 2.dp),
-                        horizontalArrangement = Arrangement.End,
-                    ) {
-                        QueueChip(
-                            count = state.queue.size,
-                            selected = showQueue,
-                            onClick = {
-                                haptic(PointerHaptic.Open)
-                                showQueue = !showQueue
-                            },
-                        )
-                    }
-                }
-                ChatComposer(
-                    draft = state.draft,
-                    isStreaming = state.streaming,
-                    modelLabel = modelLabel,
-                    attachments = state.attachments,
-                    expanded = composerExpanded,
-                    compact = composerCompact,
-                    onDraftChange = viewModel::updateDraft,
-                    onSend = {
-                        if (state.streaming) {
-                            viewModel.submitFollowUp(SendMode.QUEUE)
-                        } else {
-                            viewModel.submitFollowUp(SendMode.NOW)
-                        }
-                    },
-                    onStop = {
-                        haptic(PointerHaptic.Warning)
-                        viewModel.cancelActiveRun()
-                    },
-                    onPickModel = {
-                        if (modelsState.models.isEmpty()) viewModel.refreshModels()
-                        showModels = true
-                    },
-                    onPickImage = {
-                        imagePicker.launch(
-                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
-                        )
-                    },
-                    onPickFile = { filePicker.launch(AttachmentEncoder.PickerFileMimes) },
-                    onRemoveAttachment = viewModel::removeAgentAttachment,
-                    onToggleHeight = {
-                        if (composerExpanded) {
-                            composerExpanded = false
-                            composerHeldOpen = false
-                        } else {
-                            composerExpanded = true
-                        }
-                    },
-                    onFocusChanged = { focused ->
-                        if (focused) composerHeldOpen = true
-                    },
-                )
-            }
+        snackbarHost = {
+            SnackbarHost(
+                snackbar,
+                modifier = Modifier.padding(bottom = composerBarHeight),
+            )
         },
+        containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
+                .padding(
+                    start = padding.calculateStartPadding(layoutDirection),
+                    top = padding.calculateTopPadding(),
+                    end = padding.calculateEndPadding(layoutDirection),
+                ),
         ) {
         when {
             state.loading && state.lines.isEmpty() -> {
@@ -427,7 +372,12 @@ fun AgentScreen(
                         .nestedScroll(releaseComposerHold),
                     state = listState,
                     reverseLayout = true,
-                    contentPadding = PaddingValues(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 16.dp),
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        top = 12.dp,
+                        end = 16.dp,
+                        bottom = composerBarHeight,
+                    ),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     item(key = "bottom-spacer") { Spacer(Modifier.height(8.dp)) }
@@ -495,6 +445,81 @@ fun AgentScreen(
                 }
             }
         }
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .windowInsetsPadding(
+                        WindowInsets.safeDrawing.only(
+                            WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal,
+                        ),
+                    )
+                    .onSizeChanged { composerBarHeightPx = it.height },
+            ) {
+                AnimatedVisibility(
+                    visible = state.queue.isNotEmpty(),
+                    enter = fadeIn() + expandVertically(expandFrom = Alignment.Bottom),
+                    exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Bottom),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 12.dp, end = 16.dp, bottom = 2.dp),
+                        horizontalArrangement = Arrangement.End,
+                    ) {
+                        QueueChip(
+                            count = state.queue.size,
+                            selected = showQueue,
+                            onClick = {
+                                haptic(PointerHaptic.Open)
+                                showQueue = !showQueue
+                            },
+                        )
+                    }
+                }
+                ChatComposer(
+                    draft = state.draft,
+                    isStreaming = state.streaming,
+                    modelLabel = modelLabel,
+                    attachments = state.attachments,
+                    expanded = composerExpanded,
+                    compact = composerCompact,
+                    onDraftChange = viewModel::updateDraft,
+                    onSend = {
+                        if (state.streaming) {
+                            viewModel.submitFollowUp(SendMode.QUEUE)
+                        } else {
+                            viewModel.submitFollowUp(SendMode.NOW)
+                        }
+                    },
+                    onStop = {
+                        haptic(PointerHaptic.Warning)
+                        viewModel.cancelActiveRun()
+                    },
+                    onPickModel = {
+                        if (modelsState.models.isEmpty()) viewModel.refreshModels()
+                        showModels = true
+                    },
+                    onPickImage = {
+                        imagePicker.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                        )
+                    },
+                    onPickFile = { filePicker.launch(AttachmentEncoder.PickerFileMimes) },
+                    onRemoveAttachment = viewModel::removeAgentAttachment,
+                    onToggleHeight = {
+                        if (composerExpanded) {
+                            composerExpanded = false
+                            composerHeldOpen = false
+                        } else {
+                            composerExpanded = true
+                        }
+                    },
+                    onFocusChanged = { focused ->
+                        if (focused) composerHeldOpen = true
+                    },
+                )
+            }
         }
     }
 
