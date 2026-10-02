@@ -6,21 +6,10 @@ uses [Semantic Versioning](https://semver.org/) and the structure from
 
 ## [Unreleased]
 
-### Added
+## [0.0.1] - 2026-10-01
 
-- Long-press a user or agent message to copy it.
-
-### Fixed
-
-- Hide leftover chat errors after the same turn recovers or a later message
-  succeeds, including friendly network failures.
-
-- Draw the follow-up composer over the chat with a transparent surround so
-  only the rounded input stays filled.
-
-## [0.0.1] - 2026-09-20
-
-First public release.
+First public release. Pointer is unofficial and not affiliated with Anysphere.
+Install the signed APK from GitHub Releases and use your own Cursor API key.
 
 ### Added
 
@@ -33,6 +22,7 @@ First public release.
 - Search, filters, pins, folders, local chat names and icons, plus multi-select
   mark-as-read, archive, and permanent-delete actions with explicit
   confirmation.
+- Long-press a user or agent message to copy it.
 - Material You, light/dark themes, accessibility text sizing, haptics, and Fira
   Sans appearance choices.
 - Public privacy, security, API-use, contribution, architecture, and release
@@ -56,7 +46,10 @@ First public release.
 
 ### Fixed
 
-- Hide stale connection and chat errors after later data succeeds.
+- Hide leftover chat errors after the same turn recovers or a later message
+  succeeds, including friendly network failures.
+- Draw the follow-up composer over the chat with a transparent surround so
+  only the rounded input stays filled.
 - Preserve drafts and attachments while navigating.
 - Keep the composer above Android system navigation and make expansion visible
   even for short drafts.
