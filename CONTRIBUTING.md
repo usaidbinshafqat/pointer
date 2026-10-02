@@ -14,3 +14,8 @@ JDK 17+, Android SDK. Then `./gradlew :app:testDebugUnitTest :app:assembleDebug`
 - User-visible copy stays lowercase to match the app chrome.
 
 Pull requests should include a short note on what you verified (unit tests and/or a debug install).
+
+## Review
+
+`main` only accepts changes through a pull request. @usaidbinshafqat has to
+approve it before it can merge. Do not push commits to `main` directly.
